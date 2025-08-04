@@ -184,6 +184,10 @@ pub struct Exec {
     cond_stack: ConditionStack,
     stack: Stack,
     altstack: Stack,
+    // This is a deviation for bitvm so we can execute scripts with hints without having to know
+    // how many hints are actually required (we can overshoot the number of hints and use
+    // remaining hints in another script execution)
+    hints: Stack,
     last_codeseparator_pos: Option<u32>,
     // Initially set to the whole script, but updated when
     // OP_CODESEPARATOR is encountered.
@@ -268,6 +272,7 @@ impl Exec {
             //TODO(stevenroose) does this need to be reversed?
             stack: Stack::from_u8_vec(script_witness),
             altstack: Stack::new(),
+            hints: Stack::new(),
             opcode_count: 0,
             validation_weight: start_validation_weight,
             last_codeseparator_pos: None,
@@ -284,6 +289,21 @@ impl Exec {
         };
         ret.update_stats();
         Ok(ret)
+    }
+
+    pub fn with_hints(
+        ctx: ExecCtx,
+        opt: Options,
+        tx: TxTemplate,
+        script: ScriptBuf,
+        script_witness: Vec<Vec<u8>>,
+        hints: Vec<Vec<u8>>,
+    ) -> Result<Exec, Error> {
+        let mut ret = Self::new(ctx, opt, tx, script, script_witness);
+        if let Ok(exec) = &mut ret {
+            exec.hints = Stack::from_u8_vec(hints)
+        }
+        ret
     }
 
     pub fn with_stack(
@@ -520,6 +540,20 @@ impl Exec {
                     }
                     OP_RESERVED => {
                         return self.failop(ExecError::Debug, op);
+                    }
+
+                    // A BitVM HINT
+                    OP_RESERVED1 => {
+                        self.opcode_count += 3; // In practice a HINT will require 3 opcodes to
+                                                // roll: OP_DEPTH OP_1SUB OP_ROLL
+                        if self.opcode_count > MAX_OPS_PER_SCRIPT {
+                            return self.fail(ExecError::OpCount);
+                        }
+                        self.stack.push(
+                            self.hints
+                                .pop()
+                                .expect("No hints provided but encountered OP_RESERVED1 (HINT)"),
+                        );
                     }
 
                     _ => {}
