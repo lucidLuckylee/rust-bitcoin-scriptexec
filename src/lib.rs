@@ -1040,6 +1040,8 @@ impl Exec {
                 if self.opcode_count > MAX_OPS_PER_SCRIPT {
                     return Err(ExecError::OpCount);
                 }
+		assert_eq!(self.instructions.next().unwrap().unwrap(), Instruction::Op(OP_RESERVED1));
+		assert_eq!(self.instructions.next().unwrap().unwrap(), Instruction::Op(OP_RESERVED1));
                 self.stack.push(
                     self.hints
                         .pop()
