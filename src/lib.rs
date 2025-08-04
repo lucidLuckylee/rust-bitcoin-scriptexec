@@ -347,9 +347,9 @@ impl Exec {
         &self.altstack
     }
 
-	pub fn hints(&self) -> &Stack {
-		&self.hints
-	}
+    pub fn hints(&self) -> &Stack {
+        &self.hints
+    }
 
     pub fn stats(&self) -> &ExecStats {
         &self.stats
@@ -544,20 +544,6 @@ impl Exec {
                     }
                     OP_RESERVED => {
                         return self.failop(ExecError::Debug, op);
-                    }
-
-                    // A BitVM HINT
-                    OP_RESERVED1 => {
-                        self.opcode_count += 3; // In practice a HINT will require 3 opcodes to
-                                                // roll: OP_DEPTH OP_1SUB OP_ROLL
-                        if self.opcode_count > MAX_OPS_PER_SCRIPT {
-                            return self.fail(ExecError::OpCount);
-                        }
-                        self.stack.push(
-                            self.hints
-                                .pop()
-                                .expect("No hints provided but encountered OP_RESERVED1 (HINT)"),
-                        );
                     }
 
                     _ => {}
@@ -1045,6 +1031,20 @@ impl Exec {
 
             OP_CHECKMULTISIG | OP_CHECKMULTISIGVERIFY => {
                 unimplemented!();
+            }
+
+            // A BitVM HINT
+            OP_RESERVED1 => {
+                self.opcode_count += 2; // In practice a HINT will require 3 opcodes to
+                                        // roll: OP_DEPTH OP_1SUB OP_ROLL
+                if self.opcode_count > MAX_OPS_PER_SCRIPT {
+                    return Err(ExecError::OpCount);
+                }
+                self.stack.push(
+                    self.hints
+                        .pop()
+                        .expect("No hints provided but encountered OP_RESERVED1 (HINT)"),
+                );
             }
 
             // remainder
