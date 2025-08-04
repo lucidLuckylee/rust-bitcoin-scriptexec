@@ -347,6 +347,10 @@ impl Exec {
         &self.altstack
     }
 
+	pub fn hints(&self) -> &Stack {
+		&self.hints
+	}
+
     pub fn stats(&self) -> &ExecStats {
         &self.stats
     }
