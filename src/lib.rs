@@ -1035,11 +1035,6 @@ impl Exec {
 
             // A BitVM HINT
             OP_RESERVED1 => {
-                self.opcode_count += 2; // In practice a HINT will require 3 opcodes to
-                                        // roll: OP_DEPTH OP_1SUB OP_ROLL
-                if self.opcode_count > MAX_OPS_PER_SCRIPT {
-                    return Err(ExecError::OpCount);
-                }
 		assert_eq!(self.instructions.next().unwrap().unwrap(), Instruction::Op(OP_RESERVED1));
 		assert_eq!(self.instructions.next().unwrap().unwrap(), Instruction::Op(OP_RESERVED1));
                 self.stack.push(
